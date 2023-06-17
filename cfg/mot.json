@@ -1,8 +1,8 @@
-{   
+{
     "resize_to": [1280, 720],
 
     "stream_cfg": {
-        "resolution": [1920, 1080],
+        "resolution": [640, 480],
         "frame_rate": 30,
         "buffer_size": 10
     },

@@ -90,6 +90,9 @@ RUN if [[ -z ${CUPY_NVCC_GENERATE_CODE} ]]; then \
         CUPY_NUM_BUILD_JOBS=$(nproc) pip install --no-cache-dir -r requirements.txt; \
     fi
 
+RUN apt update && apt install -y libgtk2.0-dev pkg-config python3-tk
+RUN pip install opencv-python-headless==4.5.3.56 opencv-python==4.5.3.56 opencv-contrib-python==4.5.3.56 matplotlib
+
 # ------------------------------------  Extras Below  ------------------------------------
 
 # Stop the container (changes are kept)

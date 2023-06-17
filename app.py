@@ -11,6 +11,11 @@ import fastmot
 import fastmot.models
 from fastmot.utils import ConfigDecoder, Profiler
 
+import matplotlib
+matplotlib.use('TkAgg')  # Set the backend
+import matplotlib.pyplot as plt
+
+import numpy as np
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
@@ -81,6 +86,21 @@ def main():
     stream.start_capture()
     try:
         with Profiler('app') as prof:
+            max_plot_hist = np.floor(60 * stream.cap_fps).astype(np.int64)
+            num_tracks_hist = [0] * max_plot_hist
+
+            # Create a figure and axis
+            stat_plot, ax = plt.subplots()
+
+            track_count_line, = ax.plot(np.arange(max_plot_hist), num_tracks_hist)
+
+            # Set up the plot
+            ax.set_xlim(0, max_plot_hist)
+            ax.set_ylim(0, 5)
+            ax.set_xlabel('last frames')
+            ax.set_ylabel('visible persons')
+            ax.set_title('Visible Persons')
+
             while not args.show or cv2.getWindowProperty('Video', 0) >= 0:
                 frame = stream.read()
                 if frame is None:
@@ -88,6 +108,8 @@ def main():
 
                 if args.mot:
                     mot.step(frame)
+                    num_tracks_hist.append(len(list(mot.visible_tracks())))
+                    num_tracks_hist = num_tracks_hist[-max_plot_hist:]
                     if txt is not None:
                         for track in mot.visible_tracks():
                             tl = track.tlbr[:2] / config.resize_to * stream.resolution
@@ -100,8 +122,23 @@ def main():
                     cv2.imshow('Video', frame)
                     if cv2.waitKey(1) & 0xFF == 27:
                         break
+
+                    # Update the plot with the new data
+                    max_visible_objects = max(num_tracks_hist)
+                    ax.set_ylim(0, max(5, max_visible_objects + int(1/3 * max_visible_objects)))
+                    track_count_line.set_data(np.arange(max_plot_hist), num_tracks_hist)
+
+                    # Pause for a short interval to observe the real-time plot
+                    plt.pause(0.033)
+
+                    # If the plot window is closed, exit the loop
+                    if not plt.fignum_exists(stat_plot.number):
+                        break
+
+
                 if args.output_uri is not None:
                     stream.write(frame)
+
     finally:
         # clean up resources
         if txt is not None:
